@@ -1,1 +1,57 @@
-"""Tests for Memory-Serve CacheService: LRU cache with stats."""\n\nimport pytest\n\nfrom memory_serve import CacheService, ServeRegistry\n\n\ndef test_put_get_hit_and_miss():\n    cache = CacheService(capacity=4)\n    cache.put("a", 1)\n    hit, value = cache.get("a")\n    assert hit and value == 1\n    hit2, value2 = cache.get("missing")\n    assert not hit2 and value2 is None\n    assert cache.stats["hits"] == 1 and cache.stats["misses"] == 1\n\n\ndef test_lru_eviction_order():\n    cache = CacheService(capacity=2)\n    cache.put("a", 1)\n    cache.put("b", 2)\n    cache.get("a")\n    cache.put("c", 3)\n    assert not cache.get("b")[0]\n    assert cache.get("a")[0] and cache.get("c")[0]\n    assert cache.stats["evictions"] == 1\n\n\ndef test_put_same_key_updates_without_eviction():\n    cache = CacheService(capacity=2)\n    cache.put("a", 1)\n    cache.put("a", 2)\n    assert len(cache) == 1\n    assert cache.get("a") == (True, 2)\n    assert cache.stats["evictions"] == 0\n\n\ndef test_serve_wraps_get_with_latency():\n    cache = CacheService()\n    cache.put("k", [1, 2])\n    out = cache.serve("r1", "k")\n    assert out["hit"] is True and out["value"] == [1, 2]\n    assert out["latency_ms"] >= 0.0\n\n\ndef test_validation():\n    with pytest.raises(ValueError):\n        CacheService(capacity=0)\n    cache = CacheService()\n    with pytest.raises(ValueError):\n        cache.put("", 1)\n    with pytest.raises(ValueError):\n        cache.serve("", "k")\n\n\ndef test_base_registry_still_works():\n    assert ServeRegistry().summary()["models"] == 0\n
+"""Tests for Memory-Serve CacheService: LRU cache with stats."""
+
+import pytest
+
+from memory_serve import CacheService, ServeRegistry
+
+
+def test_put_get_hit_and_miss():
+    cache = CacheService(capacity=4)
+    cache.put("a", 1)
+    hit, value = cache.get("a")
+    assert hit and value == 1
+    hit2, value2 = cache.get("missing")
+    assert not hit2 and value2 is None
+    assert cache.stats["hits"] == 1 and cache.stats["misses"] == 1
+
+
+def test_lru_eviction_order():
+    cache = CacheService(capacity=2)
+    cache.put("a", 1)
+    cache.put("b", 2)
+    cache.get("a")
+    cache.put("c", 3)
+    assert not cache.get("b")[0]
+    assert cache.get("a")[0] and cache.get("c")[0]
+    assert cache.stats["evictions"] == 1
+
+
+def test_put_same_key_updates_without_eviction():
+    cache = CacheService(capacity=2)
+    cache.put("a", 1)
+    cache.put("a", 2)
+    assert len(cache) == 1
+    assert cache.get("a") == (True, 2)
+    assert cache.stats["evictions"] == 0
+
+
+def test_serve_wraps_get_with_latency():
+    cache = CacheService()
+    cache.put("k", [1, 2])
+    out = cache.serve("r1", "k")
+    assert out["hit"] is True and out["value"] == [1, 2]
+    assert out["latency_ms"] >= 0.0
+
+
+def test_validation():
+    with pytest.raises(ValueError):
+        CacheService(capacity=0)
+    cache = CacheService()
+    with pytest.raises(ValueError):
+        cache.put("", 1)
+    with pytest.raises(ValueError):
+        cache.serve("", "k")
+
+
+def test_base_registry_still_works():
+    assert ServeRegistry().summary()["models"] == 0
