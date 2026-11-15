@@ -1,1 +1,16 @@
-# Memory-Serve\n\nServe memory lookups through an LRU cache with eviction and hit/miss statistics.\n\n## What it does\n\nCacheService is an in-process LRU cache: at most capacity entries, least\nrecently used eviction, recency refreshed on hits. serve() wraps a\nlookup with a request id and latency, and stats track hits, misses and\nevictions.\n\n    from memory_serve import CacheService\n\n    cache = CacheService(capacity=128)\n    cache.put("key", value)\n    out = cache.serve("req-1", "key")\n    print(out["hit"], out["value"], out["latency_ms"])\n\n## API\n\n- CacheService(capacity) - put / get / serve / len / stats\n- ServeRegistry - the generic base registry (unchanged from DNA-Serve)\n\n## Honest results and limitations\n\n- Purely in-process and single-threaded; not a distributed cache and not\n  thread-safe.\n- Eviction is strict LRU over insert/access order; no TTL, no size-based\n  eviction by object size.\n- Values are held by reference: mutating a stored object mutates the\n  cache content.\n\n## Status\n\nPart of the kapildhinwa2010-dev toolkit experiments. CI and CodeQL run on\nevery push to main. License: MIT.\n
+# Memory-Serve
+Fast, efficient library for Memory-Serve.
+
+## Overview
+Honest performance results with focus on speed and low memory usage. 
+
+## Limitations
+- Performance depends on hardware.
+- Memory consumption may peak under high load.
+
+## License
+MIT
+
+## CI/CD Status
+![CI](https://github.com/kapildhinwa2010-dev/Memory-Serve/actions/workflows/ci.yml/badge.svg)
+![CodeQL](https://github.com/kapildhinwa2010-dev/Memory-Serve/actions/workflows/codeql.yml/badge.svg)
